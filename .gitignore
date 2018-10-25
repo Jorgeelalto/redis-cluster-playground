@@ -1,4 +1,9 @@
+# Files from previous repo owner
 nodes
 tmuxPlayground.sh
 nodemap
 *.rdb
+
+# Redis source
+./redis/*
+

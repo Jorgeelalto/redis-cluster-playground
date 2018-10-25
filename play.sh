@@ -5,7 +5,7 @@
 #  - requires on your path:
 #    - tmux
 #    - redis-server
-#    - redis-trib.rb
+#    - redis-cli
 #
 #  - run with no arguments for help
 ####################################
@@ -16,7 +16,7 @@ tmuxScript=$base/tmuxPlayground.sh
 nodeMap=$base/nodemap
 loglevel=debug
 
-PATH=$PATH:~/repos/redis/src/
+PATH=$PATH:redis/src/
 
 verboseRun() {
     echo Running command: $@
@@ -94,7 +94,7 @@ spawnNodes() {
 checkNode() {
     PORT=$1
     echo "Checking Redis Cluster node on port $PORT..."
-    verboseRun redis-trib.rb check 127.0.0.1:$PORT
+    verboseRun redis-cli --cluster check 127.0.0.1:$PORT
 }
 
 checkNodes() {
@@ -114,7 +114,7 @@ createCluster() {
     for port in `generateLimitedPorts $NODE_COUNT`; do
         createArgs="$createArgs 127.0.0.1:$port"
     done
-    verboseRun redis-trib.rb create $replicaArgs $createArgs
+    verboseRun redis-cli --cluster create $replicaArgs $createArgs
 }
 
 createClusterFromNodeMap() {
@@ -129,7 +129,7 @@ createClusterFromNodeMap() {
         port=${parts[1]}
         createArgs="$createArgs $ip:$port"
     done
-    verboseRun redis-trib.rb create $replicaArgs $createArgs
+    verboseRun redis-cli --cluster create $replicaArgs $createArgs
 }
 
 blockIfNotExists() {
@@ -160,7 +160,7 @@ addLocalIps() {
 
 blockIfNotExists tmux
 blockIfNotExists redis-server
-blockIfNotExists redis-trib.rb
+blockIfNotExists redis-cli
 
 case "$1" in
     node)
