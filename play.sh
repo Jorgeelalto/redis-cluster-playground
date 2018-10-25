@@ -10,13 +10,15 @@
 #  - run with no arguments for help
 ####################################
 
-base=`dirname $0`
+base=$(pwd)
 nodeConfigDir=$base/nodes
 tmuxScript=$base/tmuxPlayground.sh
 nodeMap=$base/nodemap
 loglevel=debug
 
-PATH=$PATH:redis/src/
+echo $PATH
+PATH=$PATH:$base/redis/src/
+echo $PATH
 
 verboseRun() {
     echo Running command: $@
