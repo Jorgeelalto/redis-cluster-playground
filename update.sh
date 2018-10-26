@@ -1,5 +1,12 @@
-echo "Cloning the latest Redis source code"
 rm -rf redis/
-git clone https://github.com/antirez/redis.git
+rm -rf cpp-redis-cluster/
+git clone https://github.com/Jorgeelalto/redis.git
+git clone https://github.com/vipshop/hiredis-vip.git
+
 cd redis
 make
+cd ..
+
+cd hiredis-vip
+make
+cd ..

@@ -6,4 +6,5 @@ nodemap
 
 # Redis source
 ./redis/*
-
+# hiredis-vip source
+./hiredis-vip/*
