@@ -4,7 +4,9 @@
 #include <functional>
 #include <fstream>
 #include <mutex>
+
 #include <hiredis.h>
+#include <hircluster.h>
 
 std::mutex m;
 
@@ -29,14 +31,13 @@ char* readFileBytes(std::string name) {
 }
 
 //Function to insert items to the database from an array
-int insert (redisContext*& c, std::atomic<unsigned long>& ctr, int n, char*& block, std::mutex& m) {
+int insert (redisClusterContext*& c, std::atomic<unsigned long>& ctr, int n, char*& block, std::mutex& m) {
 	int i;
-	redisReply* r;
 	//While there are still elements to be inserted
 	for (i = 0; i < n; i++) {
 		//Insert it into the database
 		m.lock();
-		r = (redisReply*) redisCommand(c, "SET %s %s", std::to_string(i).c_str(), block);
+		redisClusterCommand(c, "SET %s %s", std::to_string(i).c_str(), block);
 		//std::cout << "SET " << std::to_string(i).c_str() << " block" << std::endl;
 		//std::cout << "Reply: " << r->str << std::endl;
 		m.unlock();
@@ -46,13 +47,13 @@ int insert (redisContext*& c, std::atomic<unsigned long>& ctr, int n, char*& blo
 	return 0;
 }
 
-int read (redisContext*& c, std::atomic<unsigned long>& ctr, int n, std::mutex& m) {
+int read (redisClusterContext*& c, std::atomic<unsigned long>& ctr, int n, std::mutex& m) {
 	int i;
 	//While there are still elements to be read
 	for (i = 0; i < n; i++) {
 		//Just make a petition
 		m.lock();
-		redisCommand(c, "GET %s", std::to_string(i).c_str());
+		redisClusterCommand(c, "GET %s", std::to_string(i).c_str());
 		//std::cout << "GET " << std::to_string(i).c_str() << std::endl;
 		m.unlock();
 		//Atomically add one to the petition counter
@@ -116,7 +117,20 @@ int main(int argc, char** argv) {
         //std::cout << path << std::endl;
 	char* block = readFileBytes(path + "a");
 	//Creating some types and connect to the server
-	redisContext *c = redisConnect("127.0.0.1", 6379);
+	redisClusterContext* c;
+	const char *hostname = "127.0.0.1";
+	int port = 7000;
+	c = redisClusterConnect(hostname, port);
+	if (c == NULL || c->err) {
+		if (c) {
+			printf("Connection error: %s\n", c->errstr);
+			redisClusterFree(c);
+		} else {
+			printf("Connection error: cannot allocate Redis context\n");
+		}
+		exit(1);
+	}
+
 	std::cout << "Connected to the database" << std::endl;
 
 	//Defining the atomic double used as a petition counter
@@ -149,7 +163,8 @@ int main(int argc, char** argv) {
 
 	//Join all the threads
 	for (i = 0; i < n_threads; i++) {
-		//Only join if they exist. If in the arguments no insertion or read threads were specified then we don't join them
+		//Only join if they exist. If in the arguments no insertion or read
+		//threads were specified then we don't join them
 		if (n_insertions > 0) ti[i].join();
 		if (n_reads > 0)      tr[i].join();
 		//std::cout << "Joined " << i << "I and " << i << "R" << std::endl;
@@ -161,7 +176,7 @@ int main(int argc, char** argv) {
 	//and calculate the time difference (execution time)
 	std::chrono::duration<double> difference = end - start;
 	//Disconnect from the database
-	redisFree(c);
+	redisClusterFree(c);
 	//std::cout << "Disconnected from the DB" << std::endl;
 	//Print the statistics
 	std::cout << "Total number of requests made to the database: " << ctr << std::endl;

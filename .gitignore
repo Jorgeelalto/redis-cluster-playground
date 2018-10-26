@@ -8,3 +8,6 @@ nodemap
 ./redis/*
 # hiredis-vip source
 ./hiredis-vip/*
+
+# Compiled stuff
+./hiredis_sync
